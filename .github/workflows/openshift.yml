@@ -46,7 +46,7 @@ env:
   OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
 
   # ⬇️ EDIT with the port your application should be accessible on.
-  APP_PORT: 8080
+  APP_PORT: 3000
 
   # ⬇️ EDIT if you wish to set the kube context's namespace after login. Leave blank to use the default namespace.
   OPENSHIFT_NAMESPACE: "diagrawa-code"
@@ -177,3 +177,16 @@ jobs:
       env:
         ROUTE: ${{ steps.deploy-and-expose.outputs.route }}
         SELECTOR: ${{ steps.deploy-and-expose.outputs.selector }}
+
+    # Perform a (very) basic integration test.
+    # This step is retried since the time to pull the image and start the pod can vary.
+    - name: Test project is running
+      id: test-project
+      uses: nick-invision/retry@v2.2.0
+      with:
+        timeout_seconds: 3
+        retry_wait_seconds: 10
+        max_attempts: 30
+        warning_on_retry: false
+        # Just check that the root endpoint returns a success status (-f flag).
+        command: curl -sSfLi ${{ steps.deploy-and-expose.outputs.route }}
