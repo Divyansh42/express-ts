@@ -27,16 +27,17 @@
 
 # For a more sophisticated example, see https://github.com/redhat-actions/spring-petclinic/blob/main/.github/workflows/petclinic-sample.yaml
 # Also see our GitHub organization, https://github.com/redhat-actions/
+# ▶️ See a video of how to set up this workflow at https://www.youtube.com/watch?v=6hgBO-1pKho
 
-name: OpenShift Self Hosted
+name: OpenShift self hosted
 
 # ⬇️  Modify the fields marked with ⬇️ to fit your project, and create any secrets that are referenced.
 # https://docs.github.com/en/free-pro-team@latest/actions/reference/encrypted-secrets
 env:
   # ⬇️ EDIT with your registry and registry path.
-  REGISTRY: docker.io/tetchel
+  REGISTRY: quay.io/diagrawa
   # ⬇️ EDIT with your registry username.
-  REGISTRY_USER: tetchel
+  REGISTRY_USER: diagrawa
   REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
 
   # ⬇️ EDIT to log into your OpenShift cluster and set up the context.
@@ -48,23 +49,63 @@ env:
   APP_PORT: 3000
 
   # ⬇️ EDIT if you wish to set the kube context's namespace after login. Leave blank to use the default namespace.
-  OPENSHIFT_NAMESPACE: tetchell-code
+  # OPENSHIFT_NAMESPACE: "diagrawa-code"
+  OPENSHIFT_NAMESPACE: "default"
 
   # If you wish to manually provide the APP_NAME and TAG, set them here, otherwise they will be auto-detected.
   APP_NAME: ""
+
   TAG: ""
 
 on:
   # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows
   workflow_dispatch:
-
+  # push:
+  #   # Edit to the branch(es) you want to build and deploy on each push.
+  #   branches: [ main ]
 
 jobs:
   openshift-ci-cd:
     name: Build and deploy to OpenShift
     runs-on: [ self-hosted ]
+    environment: production
+
+    outputs:
+        ROUTE: ${{ steps.deploy-and-expose.outputs.route }}
+        SELECTOR: ${{ steps.deploy-and-expose.outputs.selector }}
 
     steps:
+    - name: Check if secrets exists
+      uses: actions/github-script@v3
+      with:
+        script: |
+          const secrets = {
+            REGISTRY_PASSWORD: `${{ secrets.REGISTRY_PASSWORD }}`,
+            OPENSHIFT_SERVER: `${{ secrets.OPENSHIFT_SERVER }}`,
+            OPENSHIFT_TOKEN: `${{ secrets.OPENSHIFT_TOKEN }}`,
+          };
+
+          const missingSecrets = Object.entries(secrets).filter(([ name, value ]) => {
+            if (value.length === 0) {
+              core.warning(`Secret "${name}" is not set`);
+              return true;
+            }
+            core.info(`✔️ Secret "${name}" is set`);
+            return false;
+
+          });
+
+          if (missingSecrets.length > 0) {
+            core.setFailed(`❌ At least one required secret is not set in the repository. \n` +
+              "You can add it using:\n" +
+              "Github UI: https://docs.github.com/en/actions/reference/encrypted-secrets#creating-encrypted-secrets-for-a-repository \n" +
+              "Github CLI: https://cli.github.com/manual/gh_secret_set \n" +
+              "Also, refer to https://github.com/redhat-actions/oc-login#getting-started-with-the-action-or-see-example");
+          }
+          else {
+            core.info(`✅ All the required secrets are set`);
+          }
+
     - uses: actions/checkout@v2
 
     - name: Determine app name
@@ -75,16 +116,17 @@ jobs:
     - name: Determine tag
       if: env.TAG == ''
       run: |
-        echo "TAG=latest ${GITHUB_SHA::7}" | tee -a $GITHUB_ENV
+        echo "TAG=${GITHUB_SHA::7}" | tee -a $GITHUB_ENV
 
     # https://github.com/redhat-actions/buildah-build#readme
     - name: Build from Dockerfile
-      uses: redhat-actions/buildah-build@v2
+      id: image-build
+      uses: divyansh42/buildah-build@layers
       with:
         image: ${{ env.APP_NAME }}
         tags: ${{ env.TAG }}
         # If you don't have a dockerfile, see:
-        # https://github.com/redhat-actions/buildah-build#building-from-scratch
+        # https://github.com/redhat-actions/buildah-build#scratch-build-inputs
         # Otherwise, point this to your Dockerfile relative to the repository root.
         dockerfiles: |
           ./Dockerfile
@@ -94,23 +136,22 @@ jobs:
       id: push-to-registry
       uses: redhat-actions/push-to-registry@v2
       with:
-        image: ${{ env.APP_NAME }}
-        tags: ${{ env.TAG }}
+        image: ${{ steps.image-build.outputs.image }}
+        tags: ${{ steps.image-build.outputs.tags }}
         registry: ${{ env.REGISTRY }}
         username: ${{ env.REGISTRY_USER }}
         password: ${{ env.REGISTRY_PASSWORD }}
-
-
-    - name: Install oc
-      uses: redhat-actions/openshift-tools-installer@v1
-      with:
-        oc: 4
 
     # The path the image was pushed to is now stored in ${{ steps.push-to-registry.outputs.registry-path }}
 
     # oc-login works on all platforms, but oc must be installed first.
     # The GitHub Ubuntu runner already includes oc.
     # Otherwise, https://github.com/redhat-actions/oc-installer#readme is available.
+
+    - name: Install oc
+      uses: redhat-actions/openshift-tools-installer@v1
+      with:
+        oc: latest
 
     # https://github.com/redhat-actions/oc-login#readme
     - name: Log in to OpenShift
@@ -122,30 +163,15 @@ jobs:
         namespace: ${{ env.OPENSHIFT_NAMESPACE }}
 
     # This step should create a deployment, service, and route to run your app and expose it to the internet.
-    # Feel free to replace this with 'oc apply', 'helm install', or however you like to deploy your app.
+    # https://github.com/redhat-actions/oc-new-app#readme
     - name: Create and expose app
-      run: |
-        export IMAGE="${{ steps.push-to-registry.outputs.registry-path }}"
-        export PORT=${{ env.APP_PORT }}
-
-        export SELECTOR="app=${{ env.APP_NAME }}"
-        echo "SELECTOR=$SELECTOR" >> $GITHUB_ENV
-
-        set -x
-        # Take down any old deployment
-        oc delete all --selector="$SELECTOR"
-        oc new-app --name $APP_NAME --docker-image="$IMAGE"
-
-        # Make sure the app port is exposed
-        oc patch svc $APP_NAME -p "{ \"spec\": { \"ports\": [{ \"name\": \"$PORT-tcp\", \"port\": $PORT }] } }"
-        oc expose service $APP_NAME --port=$PORT
-
-        oc get all --selector="$SELECTOR"
-        set +x
-
-        export ROUTE="$(oc get route $APP_NAME -o jsonpath='{.spec.host}')"
-        echo "$APP_NAME is exposed at $ROUTE"
-        echo "ROUTE=$ROUTE" >> $GITHUB_ENV
+      id: deploy-and-expose
+      uses: redhat-actions/oc-new-app@v1
+      with:
+        app_name: ${{ env.APP_NAME }}
+        image: ${{ steps.push-to-registry.outputs.registry-path }}
+        namespace: ${{ env.OPENSHIFT_NAMESPACE }}
+        port: ${{ env.APP_PORT }}
 
     - name: View application route
       run: |
@@ -155,3 +181,19 @@ jobs:
         echo "==================================================================================="
         echo
         echo "Your app can be taken down with: \"oc delete all --selector='${{ env.SELECTOR }}'\""
+      env:
+        ROUTE: ${{ steps.deploy-and-expose.outputs.route }}
+        SELECTOR: ${{ steps.deploy-and-expose.outputs.selector }}
+
+    # Perform a (very) basic integration test.
+    # This step is retried since the time to pull the image and start the pod can vary.
+    - name: Test project is running
+      id: test-project
+      uses: nick-invision/retry@v2.2.0
+      with:
+        timeout_seconds: 3
+        retry_wait_seconds: 10
+        max_attempts: 30
+        warning_on_retry: false
+        # Just check that the root endpoint returns a success status (-f flag).
+        command: curl -sSfLi ${{ steps.deploy-and-expose.outputs.route }}
