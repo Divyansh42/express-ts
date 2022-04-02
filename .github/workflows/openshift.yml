@@ -56,9 +56,11 @@ on:
   # https://docs.github.com/en/actions/reference/events-that-trigger-workflows
   push:
     # Edit to the branch(es) you want to build and deploy on each push.
-    branches: [ main ]
+    branches: [ $default-branch ]
 
 jobs:
+  crda-scan:
+    uses: ./.github/workflows/crda.yml
   openshift-ci-cd:
     name: Build and deploy to OpenShift
     # ubuntu-20.04 can also be used.
