@@ -63,7 +63,7 @@ on:
 
 jobs:
   crda-scan:
-    if: ${{ RUN_CRDA_SCAN }} == "true"
+    if: ${{ RUN_CRDA_SCAN == 'true' }}
     uses: ./.github/workflows/crda.yml
     secrets:
       CRDA_KEY: ${{ secrets.CRDA_KEY }}
