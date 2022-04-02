@@ -177,6 +177,8 @@ jobs:
         image: ${{ steps.push-image.outputs.registry-path }}
         namespace: ${{ env.OPENSHIFT_NAMESPACE }}
         port: ${{ env.APP_PORT }}
+        registry_username: ${{ env.IMAGE_REGISTRY_USER }}
+        registry_password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
     - name: Print application URL
       env:
