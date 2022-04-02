@@ -48,8 +48,8 @@ on:
   # TODO: Customize trigger events based on your DevSecOps processes
   workflow_call:
   workflow_dispatch:
-  push:
-    branches: [ $default-branch, $protected-branches ]
+  # push:
+  #   branches: [ $default-branch, $protected-branches ]
 
   # pull_request_target is used to securely share secret to the PR's workflow run.
   # For more info visit: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
