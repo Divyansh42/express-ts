@@ -47,6 +47,9 @@ name: CRDA Scan
 on:
   # TODO: Customize trigger events based on your DevSecOps processes
   workflow_call:
+    secrets:
+      CRDA_KEY:
+        required: true
   workflow_dispatch:
   # push:
   #   branches: [ $default-branch, $protected-branches ]

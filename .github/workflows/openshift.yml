@@ -62,6 +62,8 @@ on:
 jobs:
   crda-scan:
     uses: ./.github/workflows/crda.yml
+    secrets:
+      CRDA_KEY: ${{ secrets.CRDA_KEY }}
   openshift-ci-cd:
     name: Build and deploy to OpenShift
     # ubuntu-20.04 can also be used.
