@@ -56,8 +56,6 @@ on:
   pull_request_target:
     branches: [ $default-branch ]
     types: [ assigned, opened, synchronize, reopened, labeled, edited ]
-  schedule:
-    - cron: $cron-weekly
 
 permissions:
   contents: read
