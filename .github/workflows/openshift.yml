@@ -65,6 +65,7 @@ jobs:
     secrets:
       CRDA_KEY: ${{ secrets.CRDA_KEY }}
   openshift-ci-cd:
+    needs: crda-scan
     name: Build and deploy to OpenShift
     # ubuntu-20.04 can also be used.
     runs-on: ubuntu-18.04
@@ -178,7 +179,7 @@ jobs:
         namespace: ${{ env.OPENSHIFT_NAMESPACE }}
         port: ${{ env.APP_PORT }}
         registry_username: ${{ env.IMAGE_REGISTRY_USER }}
-        registry_password: ${{ env.IMAGE_REGISTRY_PASSWORD }} 
+        registry_password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
     - name: Print application URL
       env:
