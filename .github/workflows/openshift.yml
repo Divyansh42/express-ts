@@ -51,6 +51,7 @@ env:
 
   # 🖊️ EDIT to specify custom tags for the container image, or default tags will be generated below.
   IMAGE_TAGS: ""
+  RUN_CRDA_SCAN: true
 
 on:
   # https://docs.github.com/en/actions/reference/events-that-trigger-workflows
@@ -61,7 +62,7 @@ on:
 
 jobs:
   crda-scan:
-    # if: $RUN_CRDA_SCAN == 'true'
+    if: $RUN_CRDA_SCAN == 'true'
     uses: ./.github/workflows/crda.yml
     secrets:
       CRDA_KEY: ${{ secrets.CRDA_KEY }}
