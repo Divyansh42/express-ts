@@ -120,7 +120,7 @@ jobs:
         id: scan
         uses: redhat-actions/crda@v1
         with:
-          crda_key: ${{ secrets.C RDA_KEY }}          # Either use crda_key or snyk_token
+          crda_key: ${{ secrets.CRDA_KEY }}          # Either use crda_key or snyk_token
           # snyk_token: ${{ secrets.SNYK_TOKEN }}
 
       # Upload SARIF file as an Artifact to download and view
