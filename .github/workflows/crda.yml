@@ -62,6 +62,7 @@ on:
 
   # push:
   #   branches: [ $default-branch, $protected-branches ]
+  push:
 
   # pull_request_target is used to securely share secret to the PR's workflow run.
   # For more info visit: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
@@ -119,8 +120,8 @@ jobs:
         id: scan
         uses: redhat-actions/crda@v1
         with:
-          crda_key: ${{ secrets.CRDA_KEY }}          # Either use crda_key or snyk_token
-          # snyk_token: ${{ secrets.SNYK_TOKEN }}
+          # crda_key: ${{ secrets.C RDA_KEY }}          # Either use crda_key or snyk_token
+          snyk_token: ${{ secrets.SNYK_TOKEN }}
 
       # Upload SARIF file as an Artifact to download and view
       # - name: Upload SARIF as an Artifact
