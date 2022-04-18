@@ -74,7 +74,7 @@ jobs:
   #     # SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}       # Either use SNYK_TOKEN or CRDA_KEY
 
   openshift-ci-cd:
-    needs: crda-scan
+    # needs: crda-scan
     name: Build and deploy to OpenShift
     runs-on: ubuntu-20.04
     environment: production
