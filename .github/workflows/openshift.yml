@@ -60,15 +60,23 @@ on:
     branches: [ main ]
 
 jobs:
+  # 🖊️ EDIT if you want to run vulnerability check on your project before deploying
+  # the application. Please uncomment the below CRDA scan job and configure to run it in
+  # your workflow. For details about CRDA action visit https://github.com/redhat-actions/crda/blob/main/README.md
+  #
+  # TODO: Make sure to add 'CRDA Scan' starter workflow from the 'Actions' tab.
+  # For guide on adding new starter workflow visit https://docs.github.com/en/github-ae@latest/actions/using-workflows/using-starter-workflows
+
   crda-scan:
     uses: ./.github/workflows/crda.yml
     secrets:
-      CRDA_KEY: ${{ secrets.SNYK_TOKEN }}
+      CRDA_KEY: ${{ secrets.CRDA_KEY }}
+      # SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}       # Either use SNYK_TOKEN or CRDA_KEY
+
   openshift-ci-cd:
     needs: crda-scan
     name: Build and deploy to OpenShift
-    # ubuntu-20.04 can also be used.
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     environment: production
 
     outputs:

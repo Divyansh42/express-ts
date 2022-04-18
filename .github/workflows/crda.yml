@@ -46,11 +46,18 @@ name: CRDA Scan
 # Controls when the workflow will run
 on:
   # TODO: Customize trigger events based on your DevSecOps processes
+  # This workflow is made to run with OpenShift starter workflow
+  # https://github.com/actions/starter-workflows/blob/main/deployments/openshift.yml
+  # However, if you want to run this workflow as a standalone workflow, please
+  # uncomment the 'push' trigger below and configure it based on your requirements.
   workflow_call:
     secrets:
       CRDA_KEY:
-        required: true
+        required: false
+      SNYK_TOKEN:
+        required: false
   workflow_dispatch:
+
   # push:
   #   branches: [ $default-branch, $protected-branches ]
 
